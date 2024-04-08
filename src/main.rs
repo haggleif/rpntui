@@ -58,20 +58,42 @@ fn make_operation(stack: &mut VecDeque<f64>, line: &String, operation: char) {
     print_stack(&stack);
 }
 
+fn operation(stack: &mut VecDeque<f64>, operation: char) {
+    let arg1 = stack.pop_front().unwrap();
+    let arg2 = stack.pop_front().unwrap();
+    match operation {
+        '+' => stack.push_front(arg2*arg1),
+        _ => todo!(),
+    }
+}
+
+fn push_to_stack(stack: &mut VecDeque<f64>, line: &String) {
+    let parse_result = line.parse::<f64>();
+    let number = match parse_result {
+        Ok(num) => { stack.pop_back(); stack.push_front(num); },
+        Err(error) => (),
+    };
+}
+
 fn get_input(mut stack: VecDeque<f64>) -> String {
     let mut stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
     let mut line = String::new();
     for key in stdin.keys() {
-        match key.unwrap() {
+        let c = key.unwrap();
+        match c {
             Key::Char('q') => break,
             Key::Char('p') => {
                 stack.pop_front();
                 print_stack(&stack);
             }
             Key::Char('+') => {
-                make_operation(&mut stack, &line, '+');
-                line.clear()
+                if line != "" {
+                    push_to_stack(&mut stack, &line)
+                };
+                operation(&mut stack, c);
+                line.clear();
+                print_stack(&stack);
             }
             Key::Char('-') => {
                 make_operation(&mut stack, &line, '-');
@@ -86,8 +108,7 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                 line.clear()
             }
             Key::Char('\n') => {
-                stack.push_front(line.parse::<f64>().unwrap());
-                stack.truncate(STACK_SIZE);
+                push_to_stack(&mut stack, &line);
                 print_stack(&stack);
                 line.clear();
             }
@@ -110,8 +131,7 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
 fn main() {
     print!("{}", clear::All);
     print!("{}", color::Fg(color::Red));
-    let mut stack: VecDeque<f64> = VecDeque::with_capacity(10);
+    let mut stack: VecDeque<f64> = VecDeque::from(vec![0.0;10]);
     print_stack(&stack);
     let line = get_input(stack);
-    println!("{}", line);
 }
