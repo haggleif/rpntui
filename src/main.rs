@@ -24,7 +24,7 @@ fn print_stack(stack: &VecDeque<f64>) {
         print!("{}{:>7.4}", cursor::Goto(7, STACK_SIZE_SCR - line), value);
         line += 1;
     }
-    write!(
+    let _ = write!(
         stdout(),
         "{}{}> ",
         cursor::Goto(6, STACK_SIZE_SCR + 1),
@@ -33,36 +33,14 @@ fn print_stack(stack: &VecDeque<f64>) {
     stdout().flush();
 }
 
-fn make_operation(stack: &mut VecDeque<f64>, line: &String, operation: char) {
-    let arg1 = stack.pop_front().unwrap();
-    let arg2 = line.parse::<f64>().unwrap();
-    match operation {
-        '*' => {
-            stack.push_front(arg1 * arg2);
-            stack.truncate(STACK_SIZE);
-        }
-        '-' => {
-            stack.push_front(arg1 - arg2);
-            stack.truncate(STACK_SIZE);
-        }
-        '/' => {
-            stack.push_front(arg1 / arg2);
-            stack.truncate(STACK_SIZE);
-        }
-        '+' => {
-            stack.push_front(arg1 + arg2);
-            stack.truncate(STACK_SIZE);
-        }
-        _ => todo!(),
-    }
-    print_stack(&stack);
-}
-
 fn operation(stack: &mut VecDeque<f64>, operation: char) {
     let arg1 = stack.pop_front().unwrap();
     let arg2 = stack.pop_front().unwrap();
     match operation {
-        '+' => stack.push_front(arg2*arg1),
+        '+' => stack.push_front(arg2+arg1),
+        '-' => stack.push_front(arg2-arg1),
+        '*' => stack.push_front(arg2*arg1),
+        '/' => stack.push_front(arg2/arg1),       
         _ => todo!(),
     }
 }
@@ -76,58 +54,46 @@ fn push_to_stack(stack: &mut VecDeque<f64>, line: &String) {
 }
 
 fn get_input(mut stack: VecDeque<f64>) -> String {
-    let mut stdin = stdin();
+    let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
     let mut line = String::new();
     for key in stdin.keys() {
-        let c = key.unwrap();
-        match c {
-            Key::Char('q') => break,
-            Key::Char('p') => {
-                stack.pop_front();
-                print_stack(&stack);
+        if let Key::Char(c) = key.unwrap() {
+            match c {
+                'q' => break,
+                'p' => {
+                    stack.pop_front();
+                    print_stack(&stack);
+                },
+                '+' | '-' | '*' | '/' => {
+                    if line != "" {
+                        push_to_stack(&mut stack, &line)
+                    };
+                    operation(&mut stack, c);
+                    line.clear();
+                    print_stack(&stack);
+                },
+                '\n' => {
+                    push_to_stack(&mut stack, &line);
+                    print_stack(&stack);
+                    line.clear();
+                },
+                'i' => {
+                    let _ = write!(stdout, "{} {}", cursor::Goto(1, BOTTOM_LINE - 1), "INT");
+                    line.clear();
+                    stdout.flush().unwrap();
+                },
+                _ => {
+                    let _ = write!(stdout, "{}", c);
+                    stdout.flush().unwrap();
+                    line.push(c);
+                },
             }
-            Key::Char('+') => {
-                if line != "" {
-                    push_to_stack(&mut stack, &line)
-                };
-                operation(&mut stack, c);
-                line.clear();
-                print_stack(&stack);
-            }
-            Key::Char('-') => {
-                make_operation(&mut stack, &line, '-');
-                line.clear()
-            }
-            Key::Char('*') => {
-                make_operation(&mut stack, &line, '*');
-                line.clear()
-            }
-            Key::Char('/') => {
-                make_operation(&mut stack, &line, '/');
-                line.clear()
-            }
-            Key::Char('\n') => {
-                push_to_stack(&mut stack, &line);
-                print_stack(&stack);
-                line.clear();
-            }
-            Key::Char('i') => {
-                write!(stdout, "{} {}", cursor::Goto(1, BOTTOM_LINE - 1), "INT");
-                line.clear();
-                stdout.flush().unwrap();
-            }
-            Key::Char(key) => {
-                write!(stdout, "{}", key);
-                stdout.flush().unwrap();
-                line.push(key);
-            }
-            _ => todo!(),
         }
     }
     return line;
 }
-
+    
 fn main() {
     print!("{}", clear::All);
     print!("{}", color::Fg(color::Red));
