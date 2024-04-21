@@ -5,13 +5,13 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::{clear, color, cursor, style, terminal_size};
 
-const BOTTOM_LINE: u16 = 24;
-const STACK_SIZE_SCR: u16 = 10;
 const STACK_SIZE: usize = 10;
 
 enum Mode {
     Dec,
     Int,
+    Hex,
+    Bin,
 }
 
 struct Stack<T> {
@@ -23,26 +23,31 @@ fn print_stack(stack: &VecDeque<f64>) {
     let (columns, rows) = terminal_size().unwrap();
     print!(
         "{}{}{:?}",
-        cursor::Goto(1, columns),
+        cursor::Goto(1, rows),
         clear::CurrentLine,
         stack
     );
-    for i in 1..STACK_SIZE_SCR + 1 {
+    print!(
+        "{}{}x{}",
+        cursor::Goto(1, rows-1),
+        columns,
+        rows);
+    for i in 1..STACK_SIZE as u16 + 1 {
         print!(
             "{}{:03}:",
-            cursor::Goto(1, STACK_SIZE_SCR + 1 - i),
+            cursor::Goto(1, STACK_SIZE as u16 + 1 - i),
             i
         );
     }
     let mut line = 0;
     for value in stack.iter() {
-        print!("{}{:>12.4}", cursor::Goto(7, STACK_SIZE_SCR - line), value);
+        print!("{}{:>14.4}", cursor::Goto(7, STACK_SIZE as u16 - line), value);
         line += 1;
     }
     let _ = write!(
         stdout(),
         "{}{}> ",
-        cursor::Goto(6, STACK_SIZE_SCR + 1),
+        cursor::Goto(6, STACK_SIZE as u16 + 1),
         clear::CurrentLine,
     );
     stdout().flush();
@@ -74,6 +79,7 @@ fn push_to_stack(stack: &mut VecDeque<f64>, line: &String) {
 }
 
 fn get_input(mut stack: VecDeque<f64>) -> String {
+    let (columns, rows) = terminal_size().unwrap();
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
     let mut line = String::new();
@@ -110,9 +116,9 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                 'i' => {
                     let _ = write!(
                         stdout,
-                        "{}{} {}",
+                        "{}{}{}",
                         style::Invert,
-                        cursor::Goto(1, BOTTOM_LINE - 1),
+                        cursor::Goto(1, rows - 2),
                         "INT"
                     );
                     let _ = write!(stdout, "{}", style::NoInvert);
@@ -123,9 +129,9 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                 'd' => {
                     let _ = write!(
                         stdout,
-                        "{}{} {}",
+                        "{}{}{}",
                         style::Invert,
-                        cursor::Goto(1, BOTTOM_LINE - 1),
+                        cursor::Goto(1, rows - 2),
                         "DEC"
                     );
                     let _ = write!(stdout, "{}", style::NoInvert);
