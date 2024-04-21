@@ -6,8 +6,7 @@ use termion::raw::IntoRawMode;
 use termion::{clear, color, cursor, style, terminal_size};
 
 const BOTTOM_LINE: u16 = 24;
-const STACK_SIZE_SCR: u16 = 10;
-const STACK_SIZE: usize = 10;
+const STACK_SIZE: u16 = 12;
 
 enum Mode {
     Dec,
@@ -19,7 +18,25 @@ struct Stack<T> {
     stack: VecDeque<T>,
 }
 
-fn print_stack(stack: &VecDeque<f64>) {
+impl Stack<f64> {
+    fn new() -> Stack<f64> {
+        Stack {
+            mode: Mode::Dec,
+            stack: VecDeque::from(vec![0.0, STACK_SIZE.into()]),
+        }
+    }
+}
+
+impl Stack<i64> {
+    fn new() -> Stack<i64> {
+        Stack {
+            mode: Mode::Dec,
+            stack: VecDeque::from(vec![0, STACK_SIZE.into()]),
+        }
+    }
+}
+
+fn print_stack<T>(stack: &VecDeque<T>) {
     let (columns, rows) = terminal_size().unwrap();
     print!(
         "{}{}{:?}",
@@ -27,28 +44,25 @@ fn print_stack(stack: &VecDeque<f64>) {
         clear::CurrentLine,
         stack
     );
-    for i in 1..STACK_SIZE_SCR + 1 {
-        print!(
-            "{}{:03}:",
-            cursor::Goto(1, STACK_SIZE_SCR + 1 - i),
-            i
-        );
+    for i in 1..STACK_SIZE + 1 {
+        print!("{}{:03}:", cursor::Goto(1, STACK_SIZE + 1 - i), i);
     }
     let mut line = 0;
     for value in stack.iter() {
-        print!("{}{:>12.4}", cursor::Goto(7, STACK_SIZE_SCR - line), value);
+        print!("{}{:>12.4}", cursor::Goto(7, STACK_SIZE - line), value);
         line += 1;
     }
     let _ = write!(
         stdout(),
         "{}{}> ",
-        cursor::Goto(6, STACK_SIZE_SCR + 1),
+        cursor::Goto(6, STACK_SIZE + 1),
         clear::CurrentLine,
     );
     stdout().flush();
 }
 
-fn operation(stack: &mut VecDeque<f64>, operation: char) {
+fn operation<T>(stack_struct: &mut VecDeque<T>, operation: char) {
+    stack = stack_struct.stack;
     let arg1 = stack.pop_front().unwrap();
     let arg2 = stack.pop_front().unwrap();
     match operation {
@@ -59,10 +73,10 @@ fn operation(stack: &mut VecDeque<f64>, operation: char) {
         '%' => stack.push_front(arg2 % arg1),
         _ => todo!(),
     }
-    stack.resize(10, 0.0);
+    stack.resize(STACK_SIZE.into(), 0.0);
 }
 
-fn push_to_stack(stack: &mut VecDeque<f64>, line: &String) {
+fn push_to_stack<T>(stack: &mut VecDeque<T>, line: &String) {
     let parse_result = line.parse::<f64>();
     let number = match parse_result {
         Ok(num) => {
@@ -73,7 +87,7 @@ fn push_to_stack(stack: &mut VecDeque<f64>, line: &String) {
     };
 }
 
-fn get_input(mut stack: VecDeque<f64>) -> String {
+fn get_input<T>(mut stack: VecDeque<T>) -> String {
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
     let mut line = String::new();
@@ -87,7 +101,7 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                 }
                 'p' => {
                     stack.pop_front();
-                    stack.resize(10, 0.0);
+                    stack.resize(STACK_SIZE.into(), 0.0);
                     print_stack(&stack);
                 }
                 '+' | '-' | '*' | '/' | '%' => {
@@ -110,7 +124,7 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                 'i' => {
                     let _ = write!(
                         stdout,
-                        "{}{} {}",
+                        "{}{}{}",
                         style::Invert,
                         cursor::Goto(1, BOTTOM_LINE - 1),
                         "INT"
@@ -119,11 +133,11 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                     print_stack(&stack);
                     line.clear();
                     stdout.flush().unwrap();
-                },
+                }
                 'd' => {
                     let _ = write!(
                         stdout,
-                        "{}{} {}",
+                        "{}{}{}",
                         style::Invert,
                         cursor::Goto(1, BOTTOM_LINE - 1),
                         "DEC"
@@ -132,7 +146,7 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
                     print_stack(&stack);
                     line.clear();
                     stdout.flush().unwrap();
-                },
+                }
                 _ => {
                     let _ = write!(stdout, "{}", c);
                     stdout.flush().unwrap();
@@ -147,10 +161,7 @@ fn get_input(mut stack: VecDeque<f64>) -> String {
 fn main() {
     print!("{}", clear::All);
     print!("{}", color::Fg(color::Black));
-    let mut stack: Stack<f64> = Stack {
-        mode: Mode::Dec,
-        stack: VecDeque::from(vec![0.0; 10])
-    };
+    let mut stack: Stack<i64> = Stack::<i64>::new();
     print_stack(&stack.stack);
     let line = get_input(stack.stack);
 }
