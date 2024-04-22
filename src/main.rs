@@ -17,7 +17,8 @@ struct Stack<T> {
     stack: VecDeque<T>,
 }
 
-fn print_stack(stack: &VecDeque<f64>) {
+fn print_stack(stackstruct: &Stack<f64>) {
+    let stack = stackstruct.stack;
     let (columns, rows) = terminal_size().unwrap();
     print!(
         "{}{}{:?}",
@@ -76,7 +77,8 @@ fn push_to_stack(stack: &mut VecDeque<f64>, line: &String) {
     };
 }
 
-fn get_input(mut stack: VecDeque<f64>) -> String {
+fn get_input(mut stack: Stack<f64>) -> String {
+    let stack = stack.stack;
     let (columns, rows) = terminal_size().unwrap();
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
@@ -163,6 +165,6 @@ fn main() {
         mode: Mode::Dec,
         stack: VecDeque::from(vec![0.0; stack_size])
     };
-    print_stack(&stack.stack);
-    let line = get_input(stack.stack);
+    print_stack(&stack);
+    let line = get_input(stack);
 }
